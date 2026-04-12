@@ -1,0 +1,39 @@
+# Python & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+ChatBotvenv/
+
+# Environment Variables & Secrets
+.env
+pii_mappings.json
+
+# Local Databases & Vector Storage
+qdrant_local_db/
+qdrant_storage/
+qdrant_test_db/
+*.sqlite
+*.sqlite3
+*.db
+
+# Temporary Uploads & Processing
+temp/
+*.pdf
+
+# IDE & System Files
+.vscode/
+.idea/
+.DS_Store
+.qodo/
+
+# Frontend Builds (agar node use kar rahe hain)
+node_modules/
+dist/
+build/
+
+# Test files
+test_*.py
+scripts/

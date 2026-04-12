@@ -1,0 +1,118 @@
+/* frontend/css/main.css */
+
+/* Custom Styles – Extends Tailwind utilities */
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+}
+
+.ghost-border {
+  border: 1px solid rgba(169, 180, 185, 0.3);
+}
+
+.cloud-shadow {
+  box-shadow: 0 10px 30px -5px rgba(42, 52, 57, 0.08), 0 4px 10px -5px rgba(42, 52, 57, 0.04);
+}
+
+.active-nav-border {
+  border-right: 3px solid #005ac2;
+  border-radius: 0 8px 8px 0;
+}
+
+.state-view {
+  transition: opacity 0.3s ease-in-out;
+}
+
+.state-view.hidden {
+  display: none !important;
+}
+
+.animate-spin {
+  animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@media (max-width: 1023px) {
+  #sidebar {
+    transition: transform 0.3s ease;
+    box-shadow: 8px 0 24px rgba(0, 0, 0, 0.05);
+  }
+}
+
+#conversation-scroll-container {
+  scroll-behavior: smooth;
+}
+
+#conversation-scroll-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+#conversation-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#conversation-scroll-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+#conversation-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+body.overflow-hidden {
+  overflow: hidden;
+}
+
+/* Dropdown menu styling */
+.session-menu-dropdown {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.session-menu-dropdown div:hover {
+  background-color: #f0f4f7;
+}
+
+/* Toast container */
+#toast-container {
+    pointer-events: none;
+}
+
+#toast-container .toast {
+    pointer-events: auto;
+}
+
+/* Inline edit input */
+.session-item input {
+    font-family: inherit;
+    background: white;
+    border: 1px solid #005ac2;
+}
+
+/* Modal animations */
+.modal-confirm, .modal-cancel {
+    transition: all 0.2s ease;
+}
+
+/* Verdict Card Enhancements */
+.verdict-card {
+    transition: all 0.3s ease;
+}
+
+.verdict-card .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
