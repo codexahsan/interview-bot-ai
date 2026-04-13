@@ -1,3 +1,5 @@
+// frontend/js/ui/modal.js
+
 /**
  * Custom confirmation modal.
  * Returns a Promise that resolves to true if confirmed, false otherwise.

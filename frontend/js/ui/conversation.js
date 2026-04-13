@@ -58,100 +58,121 @@ export function appendFeedback(feedbackText) {
 }
 
 /**
- * Parse the raw verdict text into structured sections.
- * (Fallback for legacy plain text verdicts)
+ * Fallback parser for plain text verdicts.
  */
-function parseVerdictSections(rawText) {
-    const sections = {
-        overview: '',
+function parsePlainTextVerdict(text) {
+    const data = {
+        evaluation: '',
         score: null,
         strengths: [],
         weaknesses: [],
-        improvements: [],
-        strategy: ''
+        how_to_improve: [],
+        answering_strategy_tip: ''
     };
 
-    const lines = rawText.split('\n').filter(line => line.trim() !== '');
-    if (lines.length > 0) {
-        const firstLine = lines[0];
-        const nameMatch = firstLine.match(/^([A-Za-z]+)\s*[—–-]\s*(.*)/);
-        if (nameMatch) {
-            sections.candidateName = nameMatch[1].trim();
-            sections.overview = nameMatch[2].trim();
-        } else {
-            sections.overview = firstLine;
-        }
+    text = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '');
+    text = text.replace(/\\n/g, '\n').replace(/\\"/g, '"');
+
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+    if (lines.length > 0 && !lines[0].includes('🔹')) {
+        data.evaluation = lines[0].replace(/^Overall,\s*/i, '').trim();
     }
 
-    const fullText = rawText.replace(/\n/g, ' ');
-
-    const scoreMatch = fullText.match(/Score\s*[:]?\s*(\d+)\s*\/\s*(\d+)/i);
+    const scoreMatch = text.match(/🔹\s*Score\s*[:]?\s*(\d+)\s*\/\s*(\d+)/i);
     if (scoreMatch) {
-        sections.score = { earned: parseInt(scoreMatch[1]), total: parseInt(scoreMatch[2]) };
+        data.score = `${scoreMatch[1]}/${scoreMatch[2]}`;
     }
 
-    const extractBulletList = (pattern) => {
-        const match = fullText.match(pattern);
+    const extractBullets = (sectionName) => {
+        const regex = new RegExp(`🔹\\s*${sectionName}\\s*[:]?\\s*([\\s\\S]*?)(?=🔹|$)`, 'i');
+        const match = text.match(regex);
         if (!match) return [];
-        const content = match[1] || '';
+        let content = match[1].trim();
         return content
-            .split(/\s*[-•*]\s*/)
+            .split(/\n\s*[-•*]\s*|[-•*]\s+/)
             .map(item => item.trim())
-            .filter(item => item.length > 0 && !item.match(/^(Strengths|Weaknesses|How to Improve|Answering Strategy Tip)/i));
+            .filter(item => item && !item.startsWith('🔹'));
     };
 
-    sections.strengths = extractBulletList(/Strengths?\s*[:]?\s*(.*?)(?:Weaknesses|How to Improve|Answering Strategy Tip|$)/is);
-    sections.weaknesses = extractBulletList(/Weaknesses?\s*[:]?\s*(.*?)(?:Strengths|How to Improve|Answering Strategy Tip|$)/is);
-    sections.improvements = extractBulletList(/How to Improve\s*[:]?\s*(.*?)(?:Strengths|Weaknesses|Answering Strategy Tip|$)/is);
+    data.strengths = extractBullets('Strengths');
+    data.weaknesses = extractBullets('Weaknesses');
+    data.how_to_improve = extractBullets('How to Improve');
+    data.answering_strategy_tip = extractBullets('Answering Strategy Tip').join(' ');
 
-    const strategyMatch = fullText.match(/Answering Strategy Tip\s*[:]?\s*(.*?)(?:Strengths|Weaknesses|How to Improve|$)/is);
-    if (strategyMatch) {
-        sections.strategy = strategyMatch[1].trim();
-    }
-
-    if (sections.strengths.length === 0 && sections.weaknesses.length === 0 && sections.improvements.length === 0) {
-        sections.overview = rawText;
-    }
-
-    return sections;
+    return data;
 }
 
 /**
  * Append a beautifully structured final verdict card.
  */
 export function appendFinalVerdict(verdictData, avgScore) {
-    let data;
-    
-    if (typeof verdictData === 'string') {
+    let data = verdictData;
+
+    // Handle null or undefined
+    if (!data) {
+        data = { evaluation: 'Interview completed.' };
+    }
+
+    // If it's a string, try to parse as JSON
+    if (typeof data === 'string') {
         try {
-            data = JSON.parse(verdictData);
+            data = JSON.parse(data);
         } catch {
-            data = parseVerdictSections(verdictData);
+            data = parsePlainTextVerdict(data);
         }
-    } else {
-        data = verdictData;
+    }
+
+    // ========== FLEXIBLE FIELD EXTRACTION ==========
+    const evaluation = data.evaluation || data.overall_performance_summary || 'Interview completed';
+    
+    // Score can be a string like "38/50" or a number like 7.5
+    const scoreRaw = data.score ?? null;
+    const strengths = data.strengths || data.strength || [];
+    // Handle multiple possible keys for weaknesses
+    const weaknesses = data.weaknesses || data.weakness || data.areas_for_improvement || [];
+    const improvements = data.how_to_improve || data.improvements || data.improvement || [];
+    const strategy = data.answering_strategy_tip || data.strategy || data.answering_strategy || '';
+
+    // Parse score into displayable format
+    let parsedScore = null;
+    if (scoreRaw !== null && scoreRaw !== undefined) {
+        if (typeof scoreRaw === 'string') {
+            const match = scoreRaw.match(/(\d+(?:\.\d+)?)\s*\/\s*(\d+)/);
+            if (match) {
+                parsedScore = { earned: parseFloat(match[1]), total: parseInt(match[2]) };
+            } else {
+                // Just a number string, treat as out of 10
+                const num = parseFloat(scoreRaw);
+                if (!isNaN(num)) parsedScore = { earned: num, total: 10 };
+            }
+        } else if (typeof scoreRaw === 'number') {
+            parsedScore = { earned: scoreRaw, total: 10 };
+        }
     }
 
     const container = document.createElement('div');
     container.className = 'mt-8 verdict-card bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden';
 
+    // ========== HEADER ==========
     const header = document.createElement('div');
     header.className = 'bg-gradient-to-r from-primary to-primary-dim p-5 text-white';
-    
-    const summary = data.overall_summary || data.overview || 'Interview completed';
-    
     header.innerHTML = `
-        <div class="flex items-center justify-between flex-wrap gap-3">
-            <div>
-                <h3 class="text-xl font-bold">Candidate</h3>
-                <p class="text-sm opacity-90 mt-1">${summary}</p>
+        <div class="flex items-start justify-between gap-4">
+            <div class="flex-1 min-w-0">
+                <h3 class="text-xl font-bold mb-1">Interview Feedback</h3>
+                <p class="text-sm opacity-90 break-words">${evaluation}</p>
             </div>
             ${avgScore !== undefined && avgScore !== null ? `
-                <div class="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2 text-center">
+                <div class="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2 text-center shrink-0">
                     <div class="text-3xl font-bold">${avgScore}/10</div>
                     <div class="text-xs uppercase tracking-wider">Overall</div>
                 </div>
-            ` : ''}
+            ` : (parsedScore ? `
+                <div class="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2 text-center shrink-0">
+                    <div class="text-3xl font-bold">${parsedScore.earned}/${parsedScore.total}</div>
+                    <div class="text-xs uppercase tracking-wider">Score</div>
+                </div>
+            ` : '')}
         </div>
     `;
 
@@ -159,27 +180,30 @@ export function appendFinalVerdict(verdictData, avgScore) {
     body.className = 'p-5 space-y-5';
 
     const addSection = (title, items, icon, colorClass = 'text-blue-600') => {
-        if (!items || (Array.isArray(items) && items.length === 0)) return;
-        
+        if (!items) return;
+        if (Array.isArray(items) && items.length === 0) return;
+        if (typeof items === 'string' && items.trim() === '') return;
+
         const sectionDiv = document.createElement('div');
         sectionDiv.className = 'border-b border-gray-100 pb-4 last:border-0 last:pb-0';
-        
+
         const titleDiv = document.createElement('div');
         titleDiv.className = 'flex items-center gap-2 mb-2';
         titleDiv.innerHTML = `
             <span class="material-symbols-outlined ${colorClass} text-[20px]">${icon}</span>
             <h4 class="font-bold text-gray-800">${title}</h4>
         `;
-        
+
         const contentDiv = document.createElement('div');
         if (Array.isArray(items)) {
             contentDiv.className = 'grid grid-cols-1 gap-2 pl-7';
             items.forEach(item => {
+                const cleanItem = String(item).replace(/^[-•*]\s*/, '').trim();
                 const bullet = document.createElement('div');
                 bullet.className = 'flex items-start gap-2';
                 bullet.innerHTML = `
                     <span class="text-primary mt-1.5 w-1.5 h-1.5 rounded-full bg-primary shrink-0"></span>
-                    <span class="text-sm text-gray-700">${item}</span>
+                    <span class="text-sm text-gray-700">${cleanItem}</span>
                 `;
                 contentDiv.appendChild(bullet);
             });
@@ -187,51 +211,16 @@ export function appendFinalVerdict(verdictData, avgScore) {
             contentDiv.className = 'pl-7 text-sm text-gray-700';
             contentDiv.innerHTML = `<p>${items}</p>`;
         }
-        
+
         sectionDiv.appendChild(titleDiv);
         sectionDiv.appendChild(contentDiv);
         body.appendChild(sectionDiv);
     };
 
-    // Scores Section (if available)
-    if (data.scores) {
-        const scoreSection = document.createElement('div');
-        scoreSection.className = 'border-b border-gray-100 pb-4';
-        scoreSection.innerHTML = `
-            <div class="flex items-center gap-2 mb-3">
-                <span class="material-symbols-outlined text-indigo-600 text-[20px]">analytics</span>
-                <h4 class="font-bold text-gray-800">Detailed Scores</h4>
-            </div>
-            <div class="grid grid-cols-3 gap-3 pl-7">
-                ${createScoreBadge('Tech', data.scores.technical_knowledge)}
-                ${createScoreBadge('Comm', data.scores.communication_skills)}
-                ${createScoreBadge('Problem', data.scores.problem_solving)}
-            </div>
-        `;
-        body.appendChild(scoreSection);
-    }
-
-    function createScoreBadge(label, score) {
-        const color = score >= 7 ? 'bg-green-100 text-green-800' : score >= 4 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800';
-        return `
-            <div class="text-center p-2 rounded-lg ${color}">
-                <div class="text-lg font-bold">${score ?? '?'}</div>
-                <div class="text-[10px] uppercase tracking-wider">${label}</div>
-            </div>
-        `;
-    }
-
-    addSection('Strengths', data.strengths, 'thumb_up', 'text-green-600');
-    addSection('Areas for Improvement', data.weaknesses, 'construction', 'text-amber-600');
-    addSection('How to Improve', data['How to Improve'], 'lightbulb', 'text-blue-600');
-    addSection('Answering Strategy', data['Answering Strategy Tip'], 'strategy', 'text-purple-600');
-
-    if (!data.strengths && !data.weaknesses && !data['How to Improve'] && !data.scores && typeof verdictData === 'string') {
-        const rawDiv = document.createElement('div');
-        rawDiv.className = 'p-5 text-gray-700 whitespace-pre-wrap';
-        rawDiv.innerText = verdictData;
-        body.appendChild(rawDiv);
-    }
+    addSection('Strengths', strengths, 'thumb_up', 'text-green-600');
+    addSection('Areas for Improvement', weaknesses, 'construction', 'text-amber-600');
+    addSection('How to Improve', improvements, 'lightbulb', 'text-blue-600');
+    addSection('Answering Strategy', strategy, 'strategy', 'text-purple-600');
 
     container.appendChild(header);
     container.appendChild(body);

@@ -12,6 +12,7 @@ import json
 from sqlalchemy.orm import Session
 
 from backend.app.shared.llm.client import get_llm
+from pydantic import BaseModel, Field
 from backend.app.features.interview.interview_prompts import (
     INTERVIEW_QUESTION_PROMPT,
     NEXT_QUESTION_PROMPT,
@@ -34,6 +35,19 @@ from backend.app.core.redis_client import get_redis
 logger = get_logger(__name__)
 
 
+# ==========================================
+# 🎯 STRICT SCHEMA DEFINITION
+# ==========================================
+class FinalVerdictSchema(BaseModel):
+    """Strict JSON schema for the final interview verdict."""
+    evaluation: str = Field(description="A concise 1-line overall performance summary.")
+    score: float = Field(description="The numerical score out of 10.")
+    strengths: list[str] = Field(description="List of maximum 2 strengths, each max 1 line.")
+    weaknesses: list[str] = Field(description="List of maximum 2 weaknesses, each max 1 line.")
+    how_to_improve: list[str] = Field(description="List of maximum 2 areas to improve, each max 1 line.")
+    answering_strategy_tip: str = Field(description="A single tip on answering strategy.")
+
+
 class InterviewService:
     """Handles the interview question flow and evaluation."""
 
@@ -41,6 +55,8 @@ class InterviewService:
         self.db = db
         self.llm = get_llm()
         self.redis = get_redis()
+
+        self.structured_llm = self.llm.with_structured_output(FinalVerdictSchema)
 
     def _generate_title_from_question(self, question: str) -> str:
         """Generate a short 3-5 word title from the first interview question."""
@@ -295,13 +311,11 @@ class InterviewService:
         """
         Generate final verdict, close session, and return completion data.
         """
-        # 1. Candidate Name extract karein (Agar DB mein save nahi to "Candidate" use karega)
         candidate_name = "Candidate"
         if session.resume and getattr(session.resume, 'candidate_name', None):
             candidate_name = session.resume.candidate_name
 
-        # 2. Build conversation history for verdict
-        messages = session.messages  # Already loaded via relationship
+        messages = session.messages 
         history_lines = []
         for m in messages:
             role_label = "Interviewer" if m.role == "assistant" else "Candidate"
@@ -314,22 +328,27 @@ class InterviewService:
                 Name=candidate_name,
                 history=history_text
             )
-            verdict = self.llm.invoke(verdict_prompt).content.strip()
+            # 🚀 Use the Structured LLM here
+            verdict_obj = self.structured_llm.invoke(verdict_prompt)
+            
+            # Convert Pydantic object to JSON string for Database
+            verdict = verdict_obj.model_dump_json()
+            
         except KeyError as e:
             logger.error(f"Prompt formatting error: {e}")
-            verdict = f"{candidate_name} — Overall, formatting error occurred. Please check prompt variables."
+            verdict = f'{{"evaluation": "{candidate_name} — Overall, formatting error occurred."}}'
         except Exception as e:
             logger.error(f"LLM Verdict generation failed: {e}")
-            verdict = f"{candidate_name} — Overall, interview concluded but could not generate detailed report."
+            verdict = f'{{"evaluation": "{candidate_name} — Overall, interview concluded but could not generate detailed report."}}'
 
-        # 4. Lock session and save
+        # Lock session and save
         session.is_active = False  
         session.final_verdict = verdict
 
         # Calculate average score
         avg_score = 0
         if session.question_count > 0:
-            avg_score = round(session.total_score / session.question_count, 2)
+            avg_score = float(f"{session.total_score / session.question_count:.1f}")
             
         logger.info(f"Interview completed for session {session.id}, avg score: {avg_score}")
 
@@ -342,7 +361,7 @@ class InterviewService:
         return {
             "status": "completed",
             "average_score": avg_score,
-            "final_verdict": verdict,
+            "final_verdict": verdict, 
             "last_feedback": last_feedback,
             "ans_tip": last_tip,
             "is_active": False

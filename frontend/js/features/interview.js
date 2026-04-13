@@ -9,7 +9,6 @@ import {
     unlockChat,
     lockChat,
     updateProgress,
-    scrollToBottom,
 } from '../ui/stateManager.js';
 import {
     appendBotMessage,
@@ -18,11 +17,39 @@ import {
     appendFinalVerdict,
 } from '../ui/conversation.js';
 import { loadSidebarHistory } from '../ui/sidebar.js';
+import { showToast } from '../ui/toast.js';
+import { showConfirmModal } from '../ui/modal.js';
+
+/**
+ * Extract verdict object from various possible response formats.
+ * Returns an object containing evaluation, score, strengths, weaknesses,
+ * how_to_improve, and answering_strategy_tip.
+ */
+function extractVerdictObject(verdictData) {
+    if (!verdictData) return null;
+
+    // If it's a string, try to parse as JSON
+    if (typeof verdictData === 'string') {
+        let jsonStr = verdictData;
+        // Remove possible markdown code fences
+        jsonStr = jsonStr.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+        try {
+            const parsed = JSON.parse(jsonStr);
+            return parsed;
+        } catch {
+            // Not JSON, return null
+            return null;
+        }
+    }
+
+    // Already an object
+    return verdictData;
+}
 
 export async function startInterview() {
     if (!AppState.sessionId) {
-        alert("No session found. Please upload a resume first.");
-        return;
+        showToast("No session found. Please upload a resume first.", 'warning');
+        return; 
     }
 
     try {
@@ -35,7 +62,7 @@ export async function startInterview() {
         updateProgress(1, TOTAL_QUESTIONS);
         await loadSidebarHistory();
     } catch (error) {
-        alert("Failed to start interview: " + error.message);
+        showToast("Failed to start interview: " + error.message, 'error');
         showState(elements.stateSummary);
     }
 }
@@ -51,7 +78,8 @@ export async function submitAnswer() {
 
     try {
         const res = await apiService.submitAnswer(AppState.sessionId, answer);
-        const data = res.data;
+        const payload = res.data.data || res.data;
+        const data = payload;
 
         if (data.ans_tip || data.feedback) {
             appendFeedback(data.ans_tip || data.feedback);
@@ -59,7 +87,9 @@ export async function submitAnswer() {
 
         if (data.is_active === false || data.status === "completed") {
             lockChat();
-            appendFinalVerdict(data.final_verdict, data.average_score);
+            const verdictObj = extractVerdictObject(data.final_verdict);
+            const avgScore = data.average_score ?? 0;
+            appendFinalVerdict(verdictObj, avgScore);
         } else {
             appendBotMessage(data.question);
             updateProgress(data.question_number, TOTAL_QUESTIONS);
@@ -70,7 +100,7 @@ export async function submitAnswer() {
         await loadSidebarHistory();
     } catch (error) {
         console.error("Submit failed:", error);
-        alert("Failed to submit answer. Please try again.");
+        showToast("Failed to submit answer. Please try again.", 'error');
         unlockChat();
     }
 }
@@ -78,23 +108,35 @@ export async function submitAnswer() {
 export async function endSessionManually() {
     if (!AppState.sessionId) return;
 
-    if (confirm("Are you sure you want to end this interview session early?")) {
-        try {
-            lockChat();
-            elements.endSessionBtn.disabled = true;
-            elements.answerInput.placeholder = "Generating Final Verdict...";
+    const confirmed = await showConfirmModal({
+        title: 'End Interview',
+        message: 'Are you sure you want to end this interview early? The final verdict will be generated.',
+        confirmText: 'End Interview',
+        cancelText: 'Continue',
+        type: 'warning'
+    });
 
-            const res = await apiService.finalizeInterview(AppState.sessionId);
-            const data = res.data;
+    if (!confirmed) return;
 
-            appendFinalVerdict(data.final_verdict, data.average_score);
-            await loadSidebarHistory();
-        } catch (error) {
-            console.error("Failed to end session:", error);
-            alert("Failed to finalize interview: " + error.message);
-            unlockChat();
-            elements.endSessionBtn.disabled = false;
-        }
+    try {
+        lockChat();
+        elements.endSessionBtn.disabled = true;
+        elements.answerInput.placeholder = "Generating Final Verdict...";
+
+        const res = await apiService.finalizeInterview(AppState.sessionId);
+        const payload = res.data.data || res.data;
+        const data = payload;
+
+        const verdictObj = extractVerdictObject(data.final_verdict);
+        const avgScore = data.average_score ?? 0;
+
+        appendFinalVerdict(verdictObj, avgScore);
+        await loadSidebarHistory();
+    } catch (error) {
+        console.error("Failed to end session:", error);
+        showToast("Failed to finalize interview: " + error.message, 'error');
+        unlockChat();
+        elements.endSessionBtn.disabled = false;
     }
 }
 
@@ -102,7 +144,8 @@ export async function loadSpecificChat(sessionId) {
     try {
         AppState.sessionId = sessionId;
         const res = await apiService.getSessionDetails(sessionId);
-        const data = res.data;
+        const payload = res.data.data || res.data;
+        const data = payload;
 
         showState(elements.stateInterview);
         clearConversation();
@@ -123,8 +166,9 @@ export async function loadSpecificChat(sessionId) {
         if (data.is_active === false) {
             lockChat();
             if (data.final_verdict) {
-                const avg = data.total_score / data.question_count;
-                appendFinalVerdict(data.final_verdict, avg);
+                const verdictObj = extractVerdictObject(data.final_verdict);
+                const avgScore = data.total_score / data.question_count;
+                appendFinalVerdict(verdictObj, avgScore);
             }
         } else {
             unlockChat();
@@ -133,7 +177,7 @@ export async function loadSpecificChat(sessionId) {
         await loadSidebarHistory();
     } catch (error) {
         console.error("Failed to load session:", error);
-        alert("Could not load this chat session.");
+        showToast("Could not load this chat session.", 'error');
     }
 }
 

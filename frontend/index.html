@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
     <title>InterviewPrep AI</title>
 
+    <link rel="icon" type="image/svg+xml" href="assets/icons/psychology_icon.svg" />
     <!-- Tailwind + Plugins -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 
@@ -34,7 +35,8 @@
                 <div class="flex items-center gap-2">
                     <div
                         class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary-dim flex items-center justify-center shadow-md">
-                        <span class="material-symbols-outlined text-white text-[18px]">psychology</span>
+                        <img src="assets/icons/psychology_icon.svg" alt="Psychology Icon"
+                            class="w-5 h-5 invert brightness-0" />
                     </div>
                     <h1 class="text-[1.15rem] font-bold tracking-tight text-on-surface">InterviewPrep</h1>
                 </div>
@@ -46,7 +48,8 @@
                 New Interview
             </button>
 
-            <div class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-3 px-2">Recent Sessions</div>
+            <div class="text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-3 px-2">Recent Sessions
+            </div>
             <!-- Dynamic chat list container -->
             <nav id="sidebar-chat-list" class="flex-1 space-y-1.5 overflow-y-auto pr-1"></nav>
         </aside>
@@ -71,8 +74,10 @@
                         <span
                             class="inline-block py-1 px-3 rounded-full bg-primary-container/50 text-primary text-xs font-bold tracking-widest uppercase mb-4">Step
                             1</span>
-                        <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-on-surface mb-4">Prepare for Success</h2>
-                        <p class="text-on-surface-variant max-w-lg mx-auto text-sm sm:text-base px-4">Upload your resume to let our AI
+                        <h2 class="text-3xl sm:text-4xl font-bold tracking-tight text-on-surface mb-4">Prepare for
+                            Success</h2>
+                        <p class="text-on-surface-variant max-w-lg mx-auto text-sm sm:text-base px-4">Upload your resume
+                            to let our AI
                             customize interview questions specifically for your background and target role.</p>
                     </div>
                     <div
@@ -102,7 +107,8 @@
                     <div
                         class="w-full max-w-md space-y-8 sm:space-y-10 bg-surface-container-lowest p-6 sm:p-10 rounded-2xl cloud-shadow border border-outline-variant/20 mx-4">
                         <div class="text-center">
-                            <div class="relative inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 mb-6">
+                            <div
+                                class="relative inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 mb-6">
                                 <div class="absolute inset-0 border-4 border-primary/20 rounded-full"></div>
                                 <div
                                     class="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin">
@@ -110,7 +116,8 @@
                                 <span class="material-symbols-outlined text-primary text-3xl">auto_awesome</span>
                             </div>
                             <h2 class="text-xl sm:text-2xl font-bold mb-2">Analyzing Profile</h2>
-                            <p class="text-on-surface-variant text-xs sm:text-sm">Building your custom interview environment...</p>
+                            <p class="text-on-surface-variant text-xs sm:text-sm">Building your custom interview
+                                environment...</p>
                         </div>
 
                         <div class="space-y-4 sm:space-y-6 bg-surface-container/50 p-4 sm:p-6 rounded-xl">
@@ -118,7 +125,8 @@
                                 <div class="flex items-center gap-3 sm:gap-4">
                                     <span class="material-symbols-outlined text-green-600 text-[18px] sm:text-[20px]"
                                         style="font-variation-settings: 'FILL' 1;">check_circle</span>
-                                    <span class="text-xs sm:text-sm font-medium text-on-surface">Parsing resume content...</span>
+                                    <span class="text-xs sm:text-sm font-medium text-on-surface">Parsing resume
+                                        content...</span>
                                 </div>
                                 <span
                                     class="text-[10px] sm:text-xs text-green-600 font-bold bg-green-100 px-2 py-1 rounded-md">Done</span>
@@ -127,7 +135,8 @@
                                 <div class="flex items-center gap-3 sm:gap-4">
                                     <span
                                         class="material-symbols-outlined text-primary animate-pulse text-[18px] sm:text-[20px]">hourglass_top</span>
-                                    <span class="text-xs sm:text-sm font-medium text-on-surface">Extracting tech stack...</span>
+                                    <span class="text-xs sm:text-sm font-medium text-on-surface">Extracting tech
+                                        stack...</span>
                                 </div>
                                 <span
                                     class="text-[10px] sm:text-xs text-primary font-bold bg-primary-container px-2 py-1 rounded-md">In
@@ -135,7 +144,8 @@
                             </div>
                             <div class="flex items-center justify-between opacity-40">
                                 <div class="flex items-center gap-3 sm:gap-4">
-                                    <span class="material-symbols-outlined text-[18px] sm:text-[20px]">radio_button_unchecked</span>
+                                    <span
+                                        class="material-symbols-outlined text-[18px] sm:text-[20px]">radio_button_unchecked</span>
                                     <span class="text-xs sm:text-sm font-medium">Generating questions...</span>
                                 </div>
                                 <span class="text-[10px] sm:text-xs font-bold">Pending</span>
@@ -155,8 +165,11 @@
                     class="state-view hidden flex flex-col items-center justify-center min-h-[614px]">
                     <div
                         class="bg-surface-container-lowest cloud-shadow p-6 sm:p-10 md:p-12 rounded-2xl w-full max-w-2xl text-center border border-outline-variant/20 relative overflow-hidden mx-4">
-                        <div class="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 bg-primary/5 rounded-full blur-2xl"></div>
-                        <div class="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 bg-green-500/5 rounded-full blur-2xl"></div>
+                        <div class="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 bg-primary/5 rounded-full blur-2xl">
+                        </div>
+                        <div
+                            class="absolute bottom-0 left-0 -ml-10 -mb-10 w-40 h-40 bg-green-500/5 rounded-full blur-2xl">
+                        </div>
 
                         <div class="relative z-10">
                             <div
@@ -165,7 +178,8 @@
                                     style="font-variation-settings: 'FILL' 1;">check</span>
                             </div>
                             <h2 class="text-2xl sm:text-3xl font-bold mb-4 text-on-surface">Analysis Complete!</h2>
-                            <p class="text-on-surface-variant mb-8 sm:mb-10 text-base sm:text-lg max-w-md mx-auto px-2">Your profile has been
+                            <p class="text-on-surface-variant mb-8 sm:mb-10 text-base sm:text-lg max-w-md mx-auto px-2">
+                                Your profile has been
                                 processed. We've prepared a custom technical interview tailored to your skills.</p>
 
                             <button id="start-interview-btn" type="button"
@@ -188,17 +202,20 @@
                                     class="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-1">Progress</span>
                                 <div class="flex items-center gap-2">
                                     <span id="question-progress-text"
-                                        class="text-xs sm:text-sm font-bold bg-surface-container px-2 py-1 rounded-md">Q1 of 5</span>
-                                    <div class="w-20 sm:w-24 h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
+                                        class="text-xs sm:text-sm font-bold bg-surface-container px-2 py-1 rounded-md">Q1
+                                        of 5</span>
+                                    <div
+                                        class="w-20 sm:w-24 h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
                                         <div id="question-progress-bar"
-                                            class="h-full bg-primary transition-all duration-500" style="width: 20%;"></div>
+                                            class="h-full bg-primary transition-all duration-500" style="width: 20%;">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <button id="end-session-btn" type="button"
                             class="px-4 sm:px-5 py-2 sm:py-2.5 border-2 border-error/20 text-error text-xs sm:text-sm font-bold rounded-xl hover:bg-error hover:text-white transition-all duration-300">
-                            End Session
+                            End Interview
                         </button>
                     </div>
 
@@ -206,7 +223,8 @@
                     <div class="max-w-4xl mx-auto pb-8">
                         <div class="flex flex-col h-[calc(100vh-220px)] sm:h-[calc(100vh-200px)]">
                             <!-- Scrollable Messages Container -->
-                            <div class="flex-1 overflow-y-auto pr-2 space-y-6 sm:space-y-8 mb-4" id="conversation-scroll-container">
+                            <div class="flex-1 overflow-y-auto pr-2 space-y-6 sm:space-y-8 mb-4"
+                                id="conversation-scroll-container">
                                 <div class="space-y-6 sm:space-y-8" id="conversation-container">
                                     <!-- Messages will be dynamically appended here -->
                                 </div>
@@ -224,7 +242,8 @@
                                     class="flex items-center justify-end px-4 sm:px-5 py-3 bg-surface-container/30 rounded-xl mt-2">
                                     <button id="submit-answer-btn" type="button" disabled
                                         class="disabled:opacity-50 disabled:cursor-not-allowed px-5 sm:px-6 py-2 sm:py-2.5 bg-primary text-white text-xs sm:text-sm font-bold rounded-lg transition-all flex items-center gap-2">
-                                        Submit <span class="material-symbols-outlined text-[16px] sm:text-[18px]">send</span>
+                                        Submit <span
+                                            class="material-symbols-outlined text-[16px] sm:text-[18px]">send</span>
                                     </button>
                                 </div>
                             </div>
