@@ -55,3 +55,10 @@ export function updateProgress(currentQ, total = 5) {
     const percent = (currentQ / total) * 100;
     elements.questionProgressBar.style.width = `${percent}%`;
 }
+
+export function updateURL(sessionId) {
+    const newUrl = sessionId 
+        ? `${window.location.pathname}?session=${sessionId}` 
+        : window.location.pathname;
+    window.history.pushState({ path: newUrl }, '', newUrl);
+}

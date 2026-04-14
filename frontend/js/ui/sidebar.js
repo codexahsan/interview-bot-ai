@@ -3,7 +3,7 @@
 import { apiService } from '../api.js';
 import { AppState } from '../core/state.js';
 import { elements } from './domElements.js';
-import { showState } from './stateManager.js';
+import { showState, updateURL } from './stateManager.js';
 import { showToast } from './toast.js';
 import { showConfirmModal } from './modal.js';
 
@@ -22,7 +22,7 @@ function startInlineEdit(sessionElement, sessionId, currentTitle) {
     input.type = 'text';
     input.value = currentTitle || '';
     input.className = 'w-full text-sm font-bold bg-surface-container-lowest border border-primary rounded px-2 py-1 outline-none focus:ring-2 focus:ring-primary/50';
-    
+
     titleDiv.replaceWith(input);
     input.focus();
     input.select();
@@ -76,10 +76,10 @@ export async function loadSidebarHistory() {
             container.innerHTML = `
                 <div class="flex items-center justify-between p-3 cursor-pointer transition-colors ${activeClass} session-item" data-session-id="${chat.id}">
                     <div class="flex-1 min-w-0" data-action="load">
-                        <div class="font-bold text-sm text-on-surface truncate">${chat.title || 'Untitled'}</div>
+                        <div class="font-bold text-xs text-on-surface truncate">${chat.title || 'Untitled'}</div>
                         <div class="flex items-center gap-2 mt-1">
-                            <span class="text-xs text-on-surface-variant">${chat.date}</span>
-                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${chat.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}">${chat.status}</span>
+                            <span class="text-[9px] text-on-surface-variant">${chat.date}</span>
+                            <span class="text-[09px] font-bold px-2 py-0.5 rounded-full ${chat.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}">${chat.status}</span>
                         </div>
                     </div>
                     <div class="relative">
@@ -102,9 +102,9 @@ export async function loadSidebarHistory() {
             const loadArea = container.querySelector('[data-action="load"]');
             loadArea.addEventListener('click', (e) => {
                 e.stopPropagation();
-                import('../features/interview.js').then(module => {
-                    module.loadSpecificChat(chat.id);
-                });
+                // Update URL and load the session
+                updateURL(chat.id);
+                loadSession(chat.id);
             });
 
             const menuBtn = container.querySelector('.menu-btn');
@@ -139,6 +139,7 @@ export async function loadSidebarHistory() {
                     await apiService.deleteSession(chat.id);
                     if (AppState.sessionId === chat.id) {
                         showState(elements.stateUpload);
+                        updateURL(null);
                         AppState.sessionId = null;
                     }
                     await loadSidebarHistory();
@@ -154,6 +155,14 @@ export async function loadSidebarHistory() {
         console.error("Failed to load sidebar history:", error);
         showToast('Could not load session history', 'error');
     }
+}
+
+/**
+ * Global function to trigger loading a specific chat from the sidebar.
+ */
+export async function loadSession(sessionId) {
+    const module = await import('../features/interview.js');
+    module.loadSpecificChat(sessionId);
 }
 
 document.addEventListener('click', closeAllDropdowns);

@@ -15,7 +15,7 @@ export function appendBotMessage(text) {
         </div>
         <div class="bg-surface-container-lowest p-6 rounded-2xl rounded-tl-sm shadow-sm border border-outline-variant/10 relative">
             <span class="absolute -left-2 top-4 w-4 h-4 bg-surface-container-lowest rotate-45 border-l border-t border-outline-variant/10"></span>
-            <p class="text-[0.95rem] leading-relaxed text-on-surface font-medium relative z-10">"${text}"</p>
+            <p class="text-[0.85rem] leading-relaxed text-on-surface font-medium relative z-10">"${text}"</p>
         </div>`;
     elements.conversationContainer.appendChild(div);
     scrollToBottom();
@@ -33,7 +33,7 @@ export function appendUserMessage(text) {
         </div>
         <div class="bg-primary-container/20 p-6 rounded-2xl rounded-tr-sm ghost-border relative">
             <span class="absolute -right-2 top-4 w-4 h-4 bg-primary-fixed-dim/20 rotate-45 border-r border-t border-outline-variant/10"></span>
-            <p class="text-[0.9rem] leading-relaxed text-on-surface-variant relative z-10">"${text}"</p>
+            <p class="text-[0.8rem] leading-relaxed text-on-surface-variant relative z-10">"${text}"</p>
         </div>`;
     elements.conversationContainer.appendChild(div);
     scrollToBottom();
@@ -52,7 +52,7 @@ export function appendFeedback(feedbackText) {
             <span class="material-symbols-outlined text-yellow-600 text-[18px]">tips_and_updates</span>
             <span class="text-[11px] font-bold uppercase tracking-widest text-yellow-700">Pro-Tip</span>
         </div>
-        <p class="text-sm text-yellow-800/80 leading-relaxed">${feedbackText}</p>`;
+        <p class="text-xs text-yellow-800/80 leading-relaxed">${feedbackText}</p>`;
     elements.conversationContainer.appendChild(div);
     scrollToBottom();
 }
@@ -160,7 +160,7 @@ export function appendFinalVerdict(verdictData, avgScore) {
         <div class="flex items-start justify-between gap-4">
             <div class="flex-1 min-w-0">
                 <h3 class="text-xl font-bold mb-1">Interview Feedback</h3>
-                <p class="text-sm opacity-90 break-words">${evaluation}</p>
+                <p class="text-xs opacity-90 break-words">${evaluation}</p>
             </div>
             ${avgScore !== undefined && avgScore !== null ? `
                 <div class="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2 text-center shrink-0">
@@ -191,7 +191,7 @@ export function appendFinalVerdict(verdictData, avgScore) {
         titleDiv.className = 'flex items-center gap-2 mb-2';
         titleDiv.innerHTML = `
             <span class="material-symbols-outlined ${colorClass} text-[20px]">${icon}</span>
-            <h4 class="font-bold text-gray-800">${title}</h4>
+            <h4 class="font-bold text-gray-800 text-sm">${title}</h4>
         `;
 
         const contentDiv = document.createElement('div');
@@ -203,7 +203,7 @@ export function appendFinalVerdict(verdictData, avgScore) {
                 bullet.className = 'flex items-start gap-2';
                 bullet.innerHTML = `
                     <span class="text-primary mt-1.5 w-1.5 h-1.5 rounded-full bg-primary shrink-0"></span>
-                    <span class="text-sm text-gray-700">${cleanItem}</span>
+                    <span class="text-xs text-gray-700">${cleanItem}</span>
                 `;
                 contentDiv.appendChild(bullet);
             });

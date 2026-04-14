@@ -6,7 +6,7 @@
 export const AppState = {
     currentView: 'upload',
     resumeId: null,
-    sessionId: null,
+    sessionId: new URLSearchParams(window.location.search).get('session') || null,
     currentQuestionNum: 1,
     isUploading: false,
     processingTimeout: null,

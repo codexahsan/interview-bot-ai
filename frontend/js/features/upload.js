@@ -3,7 +3,7 @@
 import { apiService } from '../api.js';
 import { AppState } from '../core/state.js';
 import { elements } from '../ui/domElements.js';
-import { showState } from '../ui/stateManager.js';
+import { showState, updateURL } from '../ui/stateManager.js';
 import { loadSidebarHistory } from '../ui/sidebar.js';
 import { showToast } from '../ui/toast.js';
 
@@ -40,6 +40,7 @@ export async function handleFileUpload(file) {
 
         const sessionRes = await apiService.createChatSession(AppState.resumeId);
         AppState.sessionId = sessionRes.data.id;
+        updateURL(AppState.sessionId);
 
         showState(elements.stateSummary);
         await loadSidebarHistory();
