@@ -7,6 +7,7 @@ import { initMobileSidebar } from './ui/mobileSidebar.js';
 import { initUploadListeners } from './features/upload.js';
 import { initInterviewListeners } from './features/interview.js';
 import { AppState } from './core/state.js';
+import { initCoachingListeners } from './features/coaching.js';
 
 // New Interview button resets everything
 elements.newInterviewBtn.addEventListener('click', () => {
@@ -25,7 +26,8 @@ async function init() {
     initMobileSidebar();
     initUploadListeners();
     initInterviewListeners();
-await loadSidebarHistory();
+    initCoachingListeners();
+    await loadSidebarHistory();
 
     // REFRESH LOGIC: Check if session exists in URL
     if (AppState.sessionId) {

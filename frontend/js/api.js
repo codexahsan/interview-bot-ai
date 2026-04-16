@@ -61,9 +61,7 @@ export const apiService = {
     },
 
     async deleteSession(sessionId) {
-        const response = await fetch(`${API_BASE_URL}/interview/session/${sessionId}`, {
-            method: "DELETE"
-        });
+        const response = await fetch(`${API_BASE_URL}/interview/session/${sessionId}`, { method: "DELETE" });
         return handleResponse(response);
     },
 
@@ -74,7 +72,22 @@ export const apiService = {
             body: JSON.stringify({ session_id: sessionId })
         });
         return handleResponse(response);
+    },
+
+    // ✅ Coaching endpoints
+    async startCoachingSession(interviewSessionId) {
+        const response = await fetch(`${API_BASE_URL}/coach/start/${interviewSessionId}`, {
+            method: 'POST'
+        });
+        return handleResponse(response);
+    },
+
+    async sendCoachingMessage(sessionId, message) {
+        const response = await fetch(`${API_BASE_URL}/coach/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: sessionId, message: message })
+        });
+        return handleResponse(response);
     }
-
-
 };

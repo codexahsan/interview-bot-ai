@@ -135,9 +135,6 @@ def end_interview_manually(req: EndSessionRequest, db: Session = Depends(get_db)
 # -----------------------------
 @router.get("/history", response_model=StandardResponse)
 def get_all_sessions(db: Session = Depends(get_db)):
-    """
-    Fetch all chat sessions for the sidebar history list (excluding soft-deleted).
-    """
     sessions = (
         db.query(ChatSession)
         .filter(ChatSession.is_deleted == False)
@@ -152,6 +149,7 @@ def get_all_sessions(db: Session = Depends(get_db)):
             "date": s.created_at.strftime("%Y-%m-%d %H:%M"),
             "status": "Completed" if not s.is_active else f"Q{s.question_count}/5",
             "is_active": s.is_active,
+            "session_type": getattr(s, 'session_type', 'interview')  # ✅ ADDED
         }
         for s in sessions
     ]
@@ -160,15 +158,11 @@ def get_all_sessions(db: Session = Depends(get_db)):
         data=data, message="Session history retrieved", status_code=STATUS_OK
     )
 
-
 # -----------------------------
 # 📄 GET SESSION DETAILS (Load specific chat)
 # -----------------------------
 @router.get("/session/{session_id}", response_model=StandardResponse)
 def get_session_details(session_id: str, db: Session = Depends(get_db)):
-    """
-    Load all messages and verdict for a specific session when clicked.
-    """
     session = (
         db.query(ChatSession)
         .filter(ChatSession.id == session_id, ChatSession.is_deleted == False)
@@ -205,10 +199,12 @@ def get_session_details(session_id: str, db: Session = Depends(get_db)):
             "total_score": session.total_score,
             "question_count": session.question_count,
             "title": session.title,
+            "session_type": getattr(session, 'session_type', 'interview')  # ✅ ADDED
         },
         message="Session details retrieved",
         status_code=STATUS_OK,
     )
+
 
 
 # -----------------------------

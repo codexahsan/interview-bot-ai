@@ -34,4 +34,12 @@ export const elements = {
     sidebar: document.getElementById('sidebar'),
     sidebarOverlay: document.getElementById('sidebar-overlay'),
     mobileMenuBtn: document.getElementById('mobile-menu-btn'),
+
+    // Coaching
+    stateCoaching: document.getElementById('state-coaching'),
+    coachingScrollContainer: document.getElementById('coaching-scroll-container'),
+    coachingConversationContainer: document.getElementById('coaching-conversation-container'),
+    coachingMessageInput: document.getElementById('coaching-message-input'),
+    sendCoachingMessageBtn: document.getElementById('send-coaching-message-btn'),
+    endCoachingBtn: document.getElementById('end-coaching-btn'),
 };

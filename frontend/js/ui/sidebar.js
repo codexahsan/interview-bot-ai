@@ -3,7 +3,7 @@
 import { apiService } from '../api.js';
 import { AppState } from '../core/state.js';
 import { elements } from './domElements.js';
-import { showState, updateURL } from './stateManager.js';
+import { showState } from './stateManager.js';
 import { showToast } from './toast.js';
 import { showConfirmModal } from './modal.js';
 
@@ -11,9 +11,6 @@ function closeAllDropdowns() {
     document.querySelectorAll('.session-menu-dropdown').forEach(d => d.classList.add('hidden'));
 }
 
-/**
- * Enable inline editing for a session title.
- */
 function startInlineEdit(sessionElement, sessionId, currentTitle) {
     const titleDiv = sessionElement.querySelector('[data-action="load"] .font-bold');
     const originalText = titleDiv.innerText;
@@ -73,13 +70,24 @@ export async function loadSidebarHistory() {
             const isActive = AppState.sessionId === chat.id;
             const activeClass = isActive ? 'bg-primary-container/30 border-l-4 border-primary' : 'hover:bg-surface-container-high/50';
 
+            // ✅ Status text and color logic (updated)
+            let statusText = chat.status;
+            let statusColor = 'bg-blue-100 text-blue-700'; // active sessions
+
+            if (chat.session_type === 'coaching') {
+                statusText = 'Coaching';
+                statusColor = 'bg-green-100 text-green-700'; // coaching stays green
+            } else if (chat.status === 'Completed') {
+                statusColor = 'bg-purple-100 text-purple-700'; // completed interviews → purple
+            }
+
             container.innerHTML = `
                 <div class="flex items-center justify-between p-3 cursor-pointer transition-colors ${activeClass} session-item" data-session-id="${chat.id}">
                     <div class="flex-1 min-w-0" data-action="load">
                         <div class="font-bold text-xs text-on-surface truncate">${chat.title || 'Untitled'}</div>
                         <div class="flex items-center gap-2 mt-1">
-                            <span class="text-[9px] text-on-surface-variant">${chat.date}</span>
-                            <span class="text-[09px] font-bold px-2 py-0.5 rounded-full ${chat.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}">${chat.status}</span>
+                            <span class="text-[10px] text-on-surface-variant">${chat.date}</span>
+                            <span class="text-[8px] font-bold px-2 py-0.5 rounded-full ${statusColor}">${statusText}</span>
                         </div>
                     </div>
                     <div class="relative">
@@ -102,9 +110,9 @@ export async function loadSidebarHistory() {
             const loadArea = container.querySelector('[data-action="load"]');
             loadArea.addEventListener('click', (e) => {
                 e.stopPropagation();
-                // Update URL and load the session
-                updateURL(chat.id);
-                loadSession(chat.id);
+                import('../features/interview.js').then(module => {
+                    module.loadSpecificChat(chat.id);
+                });
             });
 
             const menuBtn = container.querySelector('.menu-btn');
@@ -127,7 +135,7 @@ export async function loadSidebarHistory() {
 
                 const confirmed = await showConfirmModal({
                     title: 'Delete Session',
-                    message: 'Are you sure you want to delete this session? This action cannot be undone.',
+                    message: 'Are you sure you want to delete this session?',
                     confirmText: 'Delete',
                     cancelText: 'Cancel',
                     type: 'danger'
@@ -139,7 +147,6 @@ export async function loadSidebarHistory() {
                     await apiService.deleteSession(chat.id);
                     if (AppState.sessionId === chat.id) {
                         showState(elements.stateUpload);
-                        updateURL(null);
                         AppState.sessionId = null;
                     }
                     await loadSidebarHistory();
@@ -157,9 +164,6 @@ export async function loadSidebarHistory() {
     }
 }
 
-/**
- * Global function to trigger loading a specific chat from the sidebar.
- */
 export async function loadSession(sessionId) {
     const module = await import('../features/interview.js');
     module.loadSpecificChat(sessionId);

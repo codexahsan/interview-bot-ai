@@ -62,3 +62,8 @@ export function updateURL(sessionId) {
         : window.location.pathname;
     window.history.pushState({ path: newUrl }, '', newUrl);
 }
+
+export function getSessionIdFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('session');
+}

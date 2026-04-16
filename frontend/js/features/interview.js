@@ -20,42 +20,58 @@ import { loadSidebarHistory } from '../ui/sidebar.js';
 import { showToast } from '../ui/toast.js';
 import { showConfirmModal } from '../ui/modal.js';
 
-/**
- * Extract verdict object from various possible response formats.
- * Returns an object containing evaluation, score, strengths, weaknesses,
- * how_to_improve, and answering_strategy_tip.
- */
 function extractVerdictObject(verdictData) {
     if (!verdictData) return null;
-
-    // If it's a string, try to parse as JSON
     if (typeof verdictData === 'string') {
         let jsonStr = verdictData;
-        // Remove possible markdown code fences
         jsonStr = jsonStr.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
         try {
-            const parsed = JSON.parse(jsonStr);
-            return parsed;
+            return JSON.parse(jsonStr);
         } catch {
-            // Not JSON, return null
             return null;
         }
     }
-
-    // Already an object
     return verdictData;
+}
+
+function switchToCoachMode(sessionId) {
+    const btn = elements.endSessionBtn;
+    btn.textContent = 'Talk to AI Coach';
+    btn.className = 'px-3 sm:px-4 py-1.5 sm:py-2 border-2 border-primary/30 text-primary text-xs font-bold rounded-lg hover:bg-primary hover:text-white transition-all duration-300';
+
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+    elements.endSessionBtn = newBtn;
+
+    newBtn.addEventListener('click', async () => {
+        const module = await import('../features/coaching.js');
+        module.startCoachingSession(sessionId);
+    });
+}
+
+function switchToEndInterviewMode() {
+    const btn = elements.endSessionBtn;
+    btn.textContent = 'End Interview';
+    btn.className = 'px-3 sm:px-4 py-1.5 sm:py-2 border-2 border-error/20 text-error text-xs font-bold rounded-lg hover:bg-error hover:text-white transition-all duration-300';
+
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+    elements.endSessionBtn = newBtn;
+
+    newBtn.addEventListener('click', endSessionManually);
 }
 
 export async function startInterview() {
     if (!AppState.sessionId) {
         showToast("No session found. Please upload a resume first.", 'warning');
-        return; 
+        return;
     }
 
     try {
         showState(elements.stateInterview);
         clearConversation();
         unlockChat();
+        switchToEndInterviewMode();
 
         const res = await apiService.startInterview(AppState.sessionId);
         appendBotMessage(res.data.question);
@@ -90,6 +106,7 @@ export async function submitAnswer() {
             const verdictObj = extractVerdictObject(data.final_verdict);
             const avgScore = data.average_score ?? 0;
             appendFinalVerdict(verdictObj, avgScore);
+            switchToCoachMode(AppState.sessionId);
         } else {
             appendBotMessage(data.question);
             updateProgress(data.question_number, TOTAL_QUESTIONS);
@@ -131,6 +148,7 @@ export async function endSessionManually() {
         const avgScore = data.average_score ?? 0;
 
         appendFinalVerdict(verdictObj, avgScore);
+        switchToCoachMode(AppState.sessionId);
         await loadSidebarHistory();
     } catch (error) {
         console.error("Failed to end session:", error);
@@ -146,6 +164,12 @@ export async function loadSpecificChat(sessionId) {
         const res = await apiService.getSessionDetails(sessionId);
         const payload = res.data.data || res.data;
         const data = payload;
+
+        if (data.session_type === 'coaching') {
+            const module = await import('../features/coaching.js');
+            module.loadCoachingSession(sessionId, data);
+            return;
+        }
 
         showState(elements.stateInterview);
         clearConversation();
@@ -165,6 +189,7 @@ export async function loadSpecificChat(sessionId) {
 
         if (data.is_active === false) {
             lockChat();
+            switchToCoachMode(sessionId);
             if (data.final_verdict) {
                 const verdictObj = extractVerdictObject(data.final_verdict);
                 const avgScore = data.total_score / data.question_count;
@@ -172,6 +197,7 @@ export async function loadSpecificChat(sessionId) {
             }
         } else {
             unlockChat();
+            switchToEndInterviewMode();
         }
 
         await loadSidebarHistory();
@@ -185,7 +211,18 @@ export function initInterviewListeners() {
     elements.startInterviewBtn.addEventListener('click', startInterview);
     elements.submitAnswerBtn.addEventListener('click', submitAnswer);
     elements.endSessionBtn.addEventListener('click', endSessionManually);
+    
     elements.answerInput.addEventListener('input', () => {
         elements.submitAnswerBtn.disabled = elements.answerInput.value.trim() === '';
+    });
+    
+    // ✅ Keyboard: Enter to submit, Shift+Enter for new line
+    elements.answerInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            if (!elements.submitAnswerBtn.disabled) {
+                submitAnswer();
+            }
+        }
     });
 }
