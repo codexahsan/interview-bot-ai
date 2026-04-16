@@ -11,6 +11,7 @@ from backend.app.shared.llm.client import get_llm
 from backend.app.rag.reranker import rerank
 from backend.app.shared.prompts.rephrasing_prompt import REPHRASING_PROMPT_TEMPLATE
 from backend.app.db.qdrant import get_vector_store
+from backend.app.rag.hybrid_retriever import get_hybrid_retriever
 from backend.app.core.redis_client import get_redis
 from backend.app.constants import (
     BM25_K,
@@ -137,3 +138,23 @@ class RAGPipeline:
         redis.set(cache_key, answer, ex=3600)
         logger.info("RAG pipeline completed successfully")
         return answer
+
+    def retrieve_only(self, query: str, chunks: List[str], collection_name: str) -> List[str]:
+        """Retrieve using the unified Hybrid Retriever to avoid logic duplication."""
+        standalone_query = self.rewrite_query(query, history=[])
+
+        # 1. Use the pre-built hybrid retriever
+        retriever = get_hybrid_retriever(chunks, collection_name)
+        docs = retriever.invoke(standalone_query)
+
+        # 2. Limit before rerank
+        combined_docs = docs[:MAX_COMBINED_DOCS]
+        if not combined_docs:
+            logger.warning(f"[retrieve_only] No docs for query: {standalone_query}")
+            return []
+
+        # 3. Rerank
+        top_docs = rerank(standalone_query, combined_docs)
+        if not top_docs: return []
+
+        return [doc.page_content for doc in top_docs[:TOP_K_AFTER_RERANK]]

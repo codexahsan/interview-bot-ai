@@ -28,6 +28,7 @@ from backend.app.constants import (
     ERR_NO_RESUME_FOR_SESSION,
     ERR_INVALID_SESSION,
     FINAL_VERDICT_PROMPT,
+    INTERVIEW_TOPICS,   
 )
 from backend.app.core.logger import get_logger
 from backend.app.core.redis_client import get_redis
@@ -98,7 +99,13 @@ class InterviewService:
             return {"error": "Interview session is inactive."}
 
         context = session.resume.masked_text[:INTERVIEW_CONTEXT_LENGTH_LIMIT]
-        prompt = INTERVIEW_QUESTION_PROMPT.format(context=context)
+        # Start with first topic
+        first_topic = INTERVIEW_TOPICS[0]
+        
+        prompt = INTERVIEW_QUESTION_PROMPT.format(
+            context=context,
+            topic=first_topic        # <-- pass topic
+        )
 
         question = self.llm.invoke(prompt).content.strip()
         logger.info(f"Generated first question for session {session_id}")
@@ -130,7 +137,8 @@ class InterviewService:
                 "current_question": question,
                 "question_count": 1,
                 "total_score": 0,
-                "is_active": True
+                "is_active": True,
+                "covered_topics": [first_topic],
             }),
             ex=7200
         )
@@ -232,13 +240,23 @@ class InterviewService:
         context = session.resume.masked_text[:INTERVIEW_CONTEXT_LENGTH_LIMIT]
         history = f"Q: {current_question}\nA: {answer}"
 
+        # Get covered topics from Redis cache
+        covered_topics = session_data.get("covered_topics", [INTERVIEW_TOPICS[0]])
+
+        # Pick next topic (cycle through INTERVIEW_TOPICS)
+        current_index = len(covered_topics)  # question_count is already incremented after this
+        next_topic = INTERVIEW_TOPICS[min(current_index, len(INTERVIEW_TOPICS) - 1)]
+
         next_prompt = NEXT_QUESTION_PROMPT.format(
             context=context,
-            history=history
+            history=history,
+            covered_topics=", ".join(covered_topics),
+            next_topic=next_topic,
         )
 
         next_question = self.llm.invoke(next_prompt).content.strip()
-        logger.info(f"Generated question #{session.question_count + 1} for session {session_id}")
+        logger.info(f"Generated question #{session.question_count + 1} (topic: {next_topic}) for session {session_id}")
+
 
         # Persist assistant's next question
         assistant_msg = ChatMessage(
@@ -255,14 +273,17 @@ class InterviewService:
         self.db.commit()
         logger.debug(f"Next question saved to chat_messages for session {session_id}")
 
-        # Update Redis cache
+        # Update Redis — add new topic to covered list
+        updated_topics = covered_topics + [next_topic]
+
         self.redis.set(
             f"session:{session_id}",
             json.dumps({
                 "current_question": next_question,
                 "question_count": session.question_count,
                 "total_score": session.total_score,
-                "is_active": True
+                "is_active": True,
+                "covered_topics": updated_topics,
             }),
             ex=7200
         )

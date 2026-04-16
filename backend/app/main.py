@@ -11,8 +11,9 @@ from fastapi.responses import JSONResponse
 from backend.app.features.chat.chat_routes import router as chat_router
 from backend.app.features.resume.resume_routes import router as resume_router
 from backend.app.features.interview.interview_routes import router as interview_router
-from backend.app.shared.utils.response import StandardResponse
+from backend.app.features.coaching.coaching_routes import router as coaching_router
 from backend.app.core.exceptions import AppException
+from backend.app.shared.utils.response import StandardResponse
 from backend.app.constants import APP_TITLE, APP_DESCRIPTION, ROOT_MESSAGE
 from backend.app.core.logger import get_logger
 
@@ -65,6 +66,7 @@ async def http_exception_handler(request: Request, exc: HTTPException) -> JSONRe
 app.include_router(chat_router)
 app.include_router(resume_router)
 app.include_router(interview_router)
+app.include_router(coaching_router)
 
 logger.info("Application routers registered")
 

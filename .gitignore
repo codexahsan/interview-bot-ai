@@ -11,6 +11,7 @@ ChatBotvenv/
 .env
 pii_mappings.json
 
+
 # Local Databases & Vector Storage
 qdrant_local_db/
 qdrant_storage/
@@ -18,10 +19,12 @@ qdrant_test_db/
 *.sqlite
 *.sqlite3
 *.db
+alembic.ini
 
 # Temporary Uploads & Processing
 temp/
 *.pdf
+.pytest_cache/
 
 # IDE & System Files
 .vscode/
@@ -37,3 +40,6 @@ build/
 # Test files
 test_*.py
 scripts/
+
+# Alembic
+alembic/

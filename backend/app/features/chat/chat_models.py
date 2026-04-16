@@ -24,6 +24,8 @@ class ChatSession(Base):
     title = Column(Text, nullable=True)            # Auto-generated or manual title
     is_deleted = Column(Boolean, default=False)    # Soft delete flag
 
+    session_type = Column(String, default="interview")
+    
     # Relationships
     messages = relationship("ChatMessage", back_populates="session", cascade="all, delete-orphan")
     # Resume link
