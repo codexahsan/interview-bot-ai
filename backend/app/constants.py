@@ -236,6 +236,7 @@ CRITICAL RULES (MUST FOLLOW - FAILURE MAKES RESPONSE INVALID):
    - If instruction says use both → combine them intelligently.
 3. You are FORBIDDEN from criticizing resume structure, experience length, formatting, or masked PII tokens.
 4. If your answer does NOT align with the instruction, it is WRONG.
+5. DO NOT repeat bullet points that appear in the conversation history.
 
 ------------------------
 INTERVIEW PERFORMANCE REPORT (Use ONLY if instruction requires it):
@@ -251,16 +252,45 @@ USER QUESTION: {user_message}
 SPECIFIC INSTRUCTION: {instruction}
 
 OUTPUT FORMAT (STRICT):
-- Maximum 3 bullet points unless instruction says otherwise.
+- Maximum 5 bullet points for improvement/refinement/example intents, 3 for others.
 - Each bullet point exactly ONE line.
 - No paragraphs, no introductions, no conclusions.
 - Use plain bullet points starting with "- ".
 
 YOUR RESPONSE (ONLY BULLETS):
 """
+
+
+# ====================== INTENT CLASSIFIER ======================
+INTENT_EXAMPLES = {
+    "pii": ["what is my name", "show my email", "my phone number", "where do I live", "my contact details"],
+    "skills": ["what skills do I have", "list my skills", "my technical skills", "skills from my resume"],
+    "resume": ["tell me about my experience", "my education", "projects in my resume", "what is written in my cv"],
+    "strategy": ["what strategy should I use", "how should I answer", "approach for this question", "framework to answer"],
+    "example": ["give me an example answer", "sample answer", "model response", "how would you answer this"],
+    "improvement": ["how can I improve", "make it better", "make it simpler", "improve my answer", "how to make it stronger"],
+    "weakness": ["my weaknesses", "where I am weak", "bad points", "areas of improvement"],
+    "strength": ["my strengths", "what I did well", "good points", "best part of my answer"],
+    "refinement": ["make it simpler", "simplify this", "make this shorter", "make it more concise", "use easier language", "improve this answer to be simpler"]
+}
+
+EMBEDDING_SIMILARITY_THRESHOLD = 0.72
+
 # ----------------------------------------------------------------------
 # Resume Processing
 # ----------------------------------------------------------------------
+DOMAIN_SKILL_INSTRUCTIONS = {
+    "Technical_IT_Backend": "Mention specific tools (e.g. Node, JWT, SQL) and enforce explicit architecture, validation, or lifecycle flow details.",
+    "Technical_IT_Frontend": "Mention specific tools (React, Vue, state management) and enforce explicit UI component lifecycle, optimizaton, and state logic.",
+    "Technical_IT_Fullstack": "Mention full-stack integrations (APIs, JWT, React, Node) with explicit emphasis on secure data exchange and state flow.",
+    "Technical_IT_AI_ML": "Mention specific libraries (TensorFlow, PyTorch) with emphasis on model optimization, hyperparameter reasoning, and deployment architecture.",
+    "Education": "Emphasize structured teaching methods, step-by-step behavioral frameworks, and clear real-classroom case studies.",
+    "Business": "Emphasize quantitative metrics (KPIs, ROI, conversion rates), defined decision-logic frameworks, and clear impact-driven examples.",
+    "Design_Creative": "Emphasize user-centric design principles, exact tools (Figma, Adobe), iterative feedback processes, and measurable engagement outcomes.",
+    "Healthcare": "Emphasize strict compliance protocols (HIPAA), clear patient-care structures, data accuracy, and step-by-step risk management.",
+    "General": "Focus on high-level professional outcomes, measurable achievements, structured communication, and core competency applicability."
+}
+
 TEMP_UPLOAD_DIR = "temp"
 CHUNK_SIZE = 700
 CHUNK_OVERLAP = 50

@@ -139,22 +139,26 @@ class RAGPipeline:
         logger.info("RAG pipeline completed successfully")
         return answer
 
-    def retrieve_only(self, query: str, chunks: List[str], collection_name: str) -> List[str]:
-        """Retrieve using the unified Hybrid Retriever to avoid logic duplication."""
+    def retrieve_only(self, query: str, chunks: List[str], collection_name: str, top_k: int = None) -> List[str]:
+        """Retrieve using the unified Hybrid Retriever."""
+        # FIX: history=[] explicitly passed to avoid NameError
         standalone_query = self.rewrite_query(query, history=[])
+        
+        # Domain Boost: if query is short, add technical context
+        if len(standalone_query.split()) < 4:
+            standalone_query = f"technical details about {standalone_query} in resume"
 
-        # 1. Use the pre-built hybrid retriever
         retriever = get_hybrid_retriever(chunks, collection_name)
         docs = retriever.invoke(standalone_query)
 
-        # 2. Limit before rerank
         combined_docs = docs[:MAX_COMBINED_DOCS]
         if not combined_docs:
-            logger.warning(f"[retrieve_only] No docs for query: {standalone_query}")
             return []
 
-        # 3. Rerank
         top_docs = rerank(standalone_query, combined_docs)
-        if not top_docs: return []
+        if not top_docs: 
+            return []
 
-        return [doc.page_content for doc in top_docs[:TOP_K_AFTER_RERANK]]
+        # Use dynamic top_k if provided, else fallback to constant
+        limit = top_k or TOP_K_AFTER_RERANK
+        return [doc.page_content for doc in top_docs[:limit]]

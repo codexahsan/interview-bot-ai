@@ -40,6 +40,7 @@ function switchToCoachMode(sessionId) {
     btn.className = 'px-3 sm:px-4 py-1.5 sm:py-2 border-2 border-primary/30 text-primary text-xs font-bold rounded-lg hover:bg-primary hover:text-white transition-all duration-300';
 
     const newBtn = btn.cloneNode(true);
+    newBtn.disabled = false; // Fix: re-enable the button since it might have been disabled during loading
     btn.parentNode.replaceChild(newBtn, btn);
     elements.endSessionBtn = newBtn;
 
@@ -55,6 +56,7 @@ function switchToEndInterviewMode() {
     btn.className = 'px-3 sm:px-4 py-1.5 sm:py-2 border-2 border-error/20 text-error text-xs font-bold rounded-lg hover:bg-error hover:text-white transition-all duration-300';
 
     const newBtn = btn.cloneNode(true);
+    newBtn.disabled = false;
     btn.parentNode.replaceChild(newBtn, btn);
     elements.endSessionBtn = newBtn;
 
@@ -117,7 +119,9 @@ export async function submitAnswer() {
         await loadSidebarHistory();
     } catch (error) {
         console.error("Submit failed:", error);
-        showToast("Failed to submit answer. Please try again.", 'error');
+        // Display the specific error from backend if available
+        const errorMessage = error.message || "Failed to submit answer. Please try again.";
+        showToast(errorMessage, 'error');
         unlockChat();
     }
 }

@@ -11,3 +11,4 @@ class Resume(Base):
     id = Column(Integer, primary_key=True, index=True)
     masked_text = Column(Text, nullable=False)
     chunks_json = Column(JSON, nullable=True)
+    domain_type = Column(Text, default="General", nullable=True)

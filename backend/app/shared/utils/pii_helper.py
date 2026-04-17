@@ -28,28 +28,61 @@ class PIIVault:
         return f"pii_vault:{resume_id}"
 
     def store_new_mapping(self, resume_id: str, mapping: dict) -> None:
-        """Persist token-to-original mapping in Redis."""
+        """Persist token-to-original mapping in Redis or JSON fallback."""
         key = self._get_key(resume_id)
-        # Redis mein JSON string bana kar save karein
-        self.redis.set(key, json.dumps(mapping), ex=7200) # 2 hours cache
-        logger.info(f"Stored PII mapping in REDIS for resume {resume_id}")
+        try:
+            self.redis.set(key, json.dumps(mapping), ex=7200) # 2 hours cache
+            logger.info(f"Stored PII mapping in REDIS for resume {resume_id}")
+        except Exception as e:
+            logger.error(f"Redis connection failed ({e}). Saving to {PII_MAPPINGS_FILE}")
+            try:
+                all_mappings = {}
+                if os.path.exists(PII_MAPPINGS_FILE):
+                    try:
+                        with open(PII_MAPPINGS_FILE, "r") as f:
+                            all_mappings = json.load(f)
+                    except json.JSONDecodeError:
+                        pass
+                all_mappings[key] = mapping
+                with open(PII_MAPPINGS_FILE, "w") as f:
+                    json.dump(all_mappings, f)
+            except Exception as inner_e:
+                logger.error(f"Failed to save mapping to local file: {inner_e}")
+
+    def get_mapping(self, resume_id: str) -> dict:
+        """Retrieve token-to-original mapping from Redis or JSON fallback."""
+        key = self._get_key(resume_id)
+        try:
+            raw_mapping = self.redis.get(key)
+            if raw_mapping:
+                return json.loads(raw_mapping)
+        except Exception as e:
+            logger.error(f"Redis get failed ({e}). Checking {PII_MAPPINGS_FILE}")
+
+        # Fallback to local file
+        try:
+            if os.path.exists(PII_MAPPINGS_FILE):
+                with open(PII_MAPPINGS_FILE, "r") as f:
+                    all_mappings = json.load(f)
+                    return all_mappings.get(key, {})
+        except Exception as e:
+            logger.error(f"Failed to read from local file: {e}")
+        return {}
 
     def restore_pii(self, resume_id: str, masked_text: str) -> str:
-        """Replace tokens in masked text with original PII values from Redis."""
-        key = self._get_key(resume_id)
-        raw_mapping = self.redis.get(key)
+        """Replace tokens in masked text with original PII values."""
+        mapping = self.get_mapping(resume_id)
 
-        if not raw_mapping:
-            logger.warning(f"No PII mapping found in Redis for resume {resume_id}")
+        if not mapping:
+            logger.warning(f"No PII mapping found for resume {resume_id}")
             return masked_text
 
-        mapping = json.loads(raw_mapping)
         unmasked_text = masked_text
 
         for token in sorted(mapping.keys(), key=len, reverse=True):
-            unmasked_text = unmasked_text.replace(token, mapping[token])
+            unmasked_text = unmasked_text.replace(token, str(mapping[token]))
 
-        logger.debug(f"Restored PII from REDIS for resume {resume_id}")
+        logger.debug(f"Restored PII for resume {resume_id}")
         return unmasked_text
 
 

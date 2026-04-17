@@ -58,8 +58,13 @@ class ResumeService:
         chunks = splitter.split_text(masked_text)
         logger.info(f"Split into {len(chunks)} chunks")
 
+        # 3.5 Classify Domain
+        from backend.app.shared.utils.domain_classifier import classify_domain
+        domain_type = classify_domain(raw_text)
+        logger.info(f"Domain Classified as: {domain_type}")
+
         # 4. Create Resume record
-        new_resume = Resume(masked_text=masked_text, chunks_json=chunks)
+        new_resume = Resume(masked_text=masked_text, chunks_json=chunks, domain_type=domain_type)
         self.db.add(new_resume)
         self.db.commit()
         self.db.refresh(new_resume)
