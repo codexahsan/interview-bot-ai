@@ -316,3 +316,18 @@ body.overflow-hidden {
 .verdict-card .material-symbols-outlined {
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
+
+/* ChatGPT-style input */
+#answer-input-box {
+    transition: box-shadow 0.2s ease;
+}
+
+#answer-input-box:focus-within {
+    box-shadow: 0 0 0 2px rgba(0, 90, 194, 0.2);
+    border-color: #005ac2;
+}
+
+#answer-input {
+    max-height: 150px;  /* Prevent excessive growth */
+    line-height: 1.5;
+}

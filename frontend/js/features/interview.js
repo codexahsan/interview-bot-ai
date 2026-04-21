@@ -9,6 +9,7 @@ import {
     unlockChat,
     lockChat,
     updateProgress,
+    scrollToBottom,
 } from '../ui/stateManager.js';
 import {
     appendBotMessage,
@@ -20,6 +21,57 @@ import { loadSidebarHistory } from '../ui/sidebar.js';
 import { showToast } from '../ui/toast.js';
 import { showConfirmModal } from '../ui/modal.js';
 
+
+// ============================================================================
+//  AUTO-RESIZE TEXTAREA
+// ============================================================================
+function autoResizeTextarea() {
+    const textarea = elements.answerInput;
+    if (!textarea) return;
+    
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+}
+
+// ============================================================================
+//  TYPING INDICATOR (three-dot animation)
+// ============================================================================
+let interviewTypingIndicator = null;
+
+function showInterviewTypingIndicator() {
+    if (interviewTypingIndicator) return;
+
+    const container = elements.conversationContainer;
+    const div = document.createElement('div');
+    div.className = 'flex items-start gap-4 mr-12 group';
+    div.id = 'interview-typing-indicator';
+    div.innerHTML = `
+        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary-dim flex items-center justify-center shrink-0 shadow-md shadow-primary/20 mt-1">
+            <span class="material-symbols-outlined text-white text-[20px]" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+        </div>
+        <div class="bg-surface-container-lowest p-4 rounded-2xl rounded-tl-sm shadow-sm border border-outline-variant/10">
+            <div class="flex items-center gap-1.5 px-1">
+                <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0ms"></span>
+                <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 150ms"></span>
+                <span class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 300ms"></span>
+            </div>
+        </div>
+    `;
+    container.appendChild(div);
+    interviewTypingIndicator = div;
+    scrollToBottom(); // Uses imported function, which scrolls elements.scrollContainer
+}
+
+function hideInterviewTypingIndicator() {
+    if (interviewTypingIndicator) {
+        interviewTypingIndicator.remove();
+        interviewTypingIndicator = null;
+    }
+}
+
+// ============================================================================
+//  UTILITY FUNCTIONS
+// ============================================================================
 function extractVerdictObject(verdictData) {
     if (!verdictData) return null;
     if (typeof verdictData === 'string') {
@@ -34,13 +86,16 @@ function extractVerdictObject(verdictData) {
     return verdictData;
 }
 
+// ============================================================================
+//  UI MODE SWITCHING
+// ============================================================================
 function switchToCoachMode(sessionId) {
     const btn = elements.endSessionBtn;
     btn.textContent = 'Talk to AI Coach';
     btn.className = 'px-3 sm:px-4 py-1.5 sm:py-2 border-2 border-primary/30 text-primary text-xs font-bold rounded-lg hover:bg-primary hover:text-white transition-all duration-300';
 
     const newBtn = btn.cloneNode(true);
-    newBtn.disabled = false; // Fix: re-enable the button since it might have been disabled during loading
+    newBtn.disabled = false;
     btn.parentNode.replaceChild(newBtn, btn);
     elements.endSessionBtn = newBtn;
 
@@ -63,25 +118,39 @@ function switchToEndInterviewMode() {
     newBtn.addEventListener('click', endSessionManually);
 }
 
+// ============================================================================
+//  CORE INTERVIEW FLOW
+// ============================================================================
 export async function startInterview() {
     if (!AppState.sessionId) {
         showToast("No session found. Please upload a resume first.", 'warning');
         return;
     }
 
+    const btn = elements.startInterviewBtn;
+    const originalText = btn.innerHTML;
+    
+    btn.disabled = true;
+    btn.innerHTML = `
+        <span class="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+        Generating...
+    `;
+
     try {
+        const res = await apiService.startInterview(AppState.sessionId);
+        
         showState(elements.stateInterview);
         clearConversation();
         unlockChat();
         switchToEndInterviewMode();
-
-        const res = await apiService.startInterview(AppState.sessionId);
+        
         appendBotMessage(res.data.question);
         updateProgress(1, TOTAL_QUESTIONS);
         await loadSidebarHistory();
     } catch (error) {
         showToast("Failed to start interview: " + error.message, 'error');
-        showState(elements.stateSummary);
+        btn.disabled = false;
+        btn.innerHTML = originalText;
     }
 }
 
@@ -91,13 +160,18 @@ export async function submitAnswer() {
 
     appendUserMessage(answer);
     elements.answerInput.value = '';
+    autoResizeTextarea();
     elements.submitAnswerBtn.disabled = true;
     elements.answerInput.disabled = true;
+
+    showInterviewTypingIndicator();
 
     try {
         const res = await apiService.submitAnswer(AppState.sessionId, answer);
         const payload = res.data.data || res.data;
         const data = payload;
+
+        hideInterviewTypingIndicator();
 
         if (data.ans_tip || data.feedback) {
             appendFeedback(data.ans_tip || data.feedback);
@@ -118,8 +192,8 @@ export async function submitAnswer() {
 
         await loadSidebarHistory();
     } catch (error) {
+        hideInterviewTypingIndicator();
         console.error("Submit failed:", error);
-        // Display the specific error from backend if available
         const errorMessage = error.message || "Failed to submit answer. Please try again.";
         showToast(errorMessage, 'error');
         unlockChat();
@@ -211,16 +285,19 @@ export async function loadSpecificChat(sessionId) {
     }
 }
 
+// ============================================================================
+//  INITIALIZATION
+// ============================================================================
 export function initInterviewListeners() {
     elements.startInterviewBtn.addEventListener('click', startInterview);
     elements.submitAnswerBtn.addEventListener('click', submitAnswer);
     elements.endSessionBtn.addEventListener('click', endSessionManually);
+    elements.answerInput.addEventListener('input', autoResizeTextarea);
     
     elements.answerInput.addEventListener('input', () => {
         elements.submitAnswerBtn.disabled = elements.answerInput.value.trim() === '';
     });
     
-    // ✅ Keyboard: Enter to submit, Shift+Enter for new line
     elements.answerInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();

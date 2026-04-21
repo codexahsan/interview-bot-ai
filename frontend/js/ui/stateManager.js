@@ -42,9 +42,14 @@ export function lockChat() {
  */
 export function unlockChat() {
     elements.answerInput.disabled = false;
-    elements.submitAnswerBtn.disabled = true; // enabled when user types
+    elements.submitAnswerBtn.disabled = true;
     elements.answerInput.placeholder = "Type your answer here...";
     elements.answerInputBox.classList.remove('opacity-60', 'pointer-events-none');
+    
+    // Reset height after unlocking
+    if (elements.answerInput) {
+        elements.answerInput.style.height = 'auto';
+    }
 }
 
 /**

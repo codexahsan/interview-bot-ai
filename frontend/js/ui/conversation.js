@@ -4,9 +4,22 @@ import { elements } from './domElements.js';
 import { scrollToBottom } from './stateManager.js';
 
 /**
+ * Strip markdown emphasis and clean text for display.
+ */
+function cleanMessageText(text) {
+    if (!text) return '';
+    // Remove asterisks used for bold/italic (*word* or **word**)
+    let cleaned = text.replace(/\*+([^*]+)\*+/g, '$1');
+    // Remove surrounding quotes if present
+    cleaned = cleaned.replace(/^"(.*)"$/, '$1');
+    return cleaned;
+}
+
+/**
  * Append an assistant (bot) message.
  */
 export function appendBotMessage(text) {
+    const cleaned = cleanMessageText(text);
     const div = document.createElement('div');
     div.className = 'flex items-start gap-4 mr-12 group';
     div.innerHTML = `
@@ -15,7 +28,7 @@ export function appendBotMessage(text) {
         </div>
         <div class="bg-surface-container-lowest p-6 rounded-2xl rounded-tl-sm shadow-sm border border-outline-variant/10 relative">
             <span class="absolute -left-2 top-4 w-4 h-4 bg-surface-container-lowest rotate-45 border-l border-t border-outline-variant/10"></span>
-            <p class="text-[0.85rem] leading-relaxed text-on-surface font-medium relative z-10">"${text}"</p>
+            <p class="text-[0.85rem] leading-relaxed text-on-surface font-medium relative z-10">${cleaned}</p>
         </div>`;
     elements.conversationContainer.appendChild(div);
     scrollToBottom();
@@ -25,6 +38,7 @@ export function appendBotMessage(text) {
  * Append a user message.
  */
 export function appendUserMessage(text) {
+    const cleaned = cleanMessageText(text);
     const div = document.createElement('div');
     div.className = 'flex items-start gap-4 ml-12 flex-row-reverse group';
     div.innerHTML = `
@@ -33,7 +47,7 @@ export function appendUserMessage(text) {
         </div>
         <div class="bg-primary-container/20 p-6 rounded-2xl rounded-tr-sm ghost-border relative">
             <span class="absolute -right-2 top-4 w-4 h-4 bg-primary-fixed-dim/20 rotate-45 border-r border-t border-outline-variant/10"></span>
-            <p class="text-[0.8rem] leading-relaxed text-on-surface-variant relative z-10">"${text}"</p>
+            <p class="text-[0.8rem] leading-relaxed text-on-surface-variant relative z-10">${cleaned}</p>
         </div>`;
     elements.conversationContainer.appendChild(div);
     scrollToBottom();
@@ -44,6 +58,7 @@ export function appendUserMessage(text) {
  */
 export function appendFeedback(feedbackText) {
     if (!feedbackText) return;
+    const cleaned = cleanMessageText(feedbackText);
     const div = document.createElement('div');
     div.className = 'ml-16 mr-12 p-5 bg-yellow-50 rounded-xl border border-yellow-100 shadow-sm relative overflow-hidden';
     div.innerHTML = `
@@ -52,7 +67,7 @@ export function appendFeedback(feedbackText) {
             <span class="material-symbols-outlined text-yellow-600 text-[18px]">tips_and_updates</span>
             <span class="text-[11px] font-bold uppercase tracking-widest text-yellow-700">Pro-Tip</span>
         </div>
-        <p class="text-xs text-yellow-800/80 leading-relaxed">${feedbackText}</p>`;
+        <p class="text-xs text-yellow-800/80 leading-relaxed">${cleaned}</p>`;
     elements.conversationContainer.appendChild(div);
     scrollToBottom();
 }
@@ -124,7 +139,7 @@ export function appendFinalVerdict(verdictData, avgScore) {
 
     // ========== FLEXIBLE FIELD EXTRACTION ==========
     const evaluation = data.evaluation || data.overall_performance_summary || 'Interview completed';
-    
+
     // Score can be a string like "38/50" or a number like 7.5
     const scoreRaw = data.score ?? null;
     const strengths = data.strengths || data.strength || [];
